@@ -28,5 +28,6 @@ async def get_recommendations(
         weekly_focus=[Recommendation(**r) for r in data["weekly_focus"]],
         explore_next=[Recommendation(**r) for r in data["explore_next"]],
         quick_wins=[Recommendation(**r) for r in data["quick_wins"]],
+        behavioral_insights=data.get("behavioral_insights", []),
         generated_at=data["generated_at"],
     )

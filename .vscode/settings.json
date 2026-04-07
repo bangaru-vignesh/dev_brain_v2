@@ -1,0 +1,10 @@
+{
+    "liveServer.settings.ignoreFiles": [
+        "**/*.db",
+        "**/*.db-journal",
+        "**/.logs/**",
+        "**/venv/**",
+        "**/.pytest_cache/**",
+        "**/.git/**"
+    ]
+}

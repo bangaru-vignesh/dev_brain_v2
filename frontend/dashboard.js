@@ -145,6 +145,7 @@ async function loadAllData() {
     await Promise.all([
       loadProfile(),
       loadDashboard(),
+      loadTodayIntelligence(),
     ]);
     // Load section-specific data lazily
     loadSkills();
@@ -153,6 +154,42 @@ async function loadAllData() {
     loadSnowflakeAnalytics();
   } catch (err) {
     console.error('Load error:', err);
+  }
+}
+
+async function loadTodayIntelligence() {
+  try {
+    const [summaryRes, topicsRes, recsRes] = await Promise.all([
+      apiFetch('/dashboard/daily-summary'),
+      apiFetch('/dashboard/top-topics'),
+      apiFetch('/recommendations/')
+    ]);
+
+    // Health Score
+    document.getElementById('ui-health-score').textContent = summaryRes.learning_health ?? '--';
+    
+    // Daily Summary
+    document.getElementById('ui-coding-time').textContent = (summaryRes.coding_time || 0) + ' hrs';
+    document.getElementById('ui-learning-time').textContent = (summaryRes.learning_time || 0) + ' hrs';
+    document.getElementById('ui-focus-time').textContent = (summaryRes.focus_time || 0) + ' hrs';
+    
+    // Top Topics
+    const topicsList = document.getElementById('ui-top-topics');
+    if (topicsRes.topics && topicsRes.topics.length > 0) {
+      topicsList.innerHTML = topicsRes.topics.map(t => `<li>${t.topic} <span style="color:var(--text-secondary)">(${t.score.toFixed(1)})</span></li>`).join('');
+    } else {
+      topicsList.innerHTML = `<li style="color:var(--text-secondary)">No topics today</li>`;
+    }
+
+    // Insights
+    const insightsList = document.getElementById('ui-behavioral-insights');
+    if (recsRes.behavioral_insights && recsRes.behavioral_insights.length > 0) {
+      insightsList.innerHTML = recsRes.behavioral_insights.map(i => `<li>${i}</li>`).join('');
+    } else {
+      insightsList.innerHTML = `<li style="color:var(--text-secondary); list-style:none; margin-left:-1.2rem">No insights yet.</li>`;
+    }
+  } catch (err) {
+    console.error('Intelligence load error:', err);
   }
 }
 

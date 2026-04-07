@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, skills, events, recommendations, dashboard, analytics, chat
+from app.api import auth, skills, events, recommendations, dashboard, analytics, chat, github
 from app.core.database import init_db
 
 
@@ -69,6 +69,8 @@ app.include_router(recommendations.router, prefix="/api/recommendations", tags=[
 app.include_router(dashboard.router,       prefix="/api/dashboard",       tags=["Dashboard"])
 app.include_router(analytics.router,       prefix="/api/analytics",       tags=["Analytics - Snowflake"])
 app.include_router(chat.router,            prefix="/api/chat",            tags=["AI Chatbot"])
+app.include_router(github.router,          prefix="/api/github",          tags=["GitHub Integration"])
+
 
 
 @app.get("/api/health", tags=["Health"])

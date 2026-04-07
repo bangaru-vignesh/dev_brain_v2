@@ -123,9 +123,17 @@ async def generate_recommendations(db: AsyncSession, user_id: int) -> dict:
             "estimated_hours": resource.get("hours"),
         })
 
+    # Behavioral Insights (Product Differentiator)
+    behavioral_insights = [
+        "You learned Kafka but didn’t practice it. Try coding a project.",
+        "You switched apps too frequently. Try focused sessions.",
+        "Your Python activity is dropping. Revise key concepts."
+    ]
+
     return {
         "weekly_focus": weekly_focus,
         "explore_next": explore_next,
         "quick_wins": quick_wins,
+        "behavioral_insights": behavioral_insights,
         "generated_at": datetime.now(timezone.utc),
     }

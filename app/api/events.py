@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.event import EventSource
+from app.models.event import EventSource, EventDepth, ActivityType
 from app.schemas.event import EventCreate, EventResponse, EventListResponse
 from app.services.event_service import create_event, get_user_events
 from app.services.skill_service import rebuild_skill_graph
@@ -102,6 +102,77 @@ async def ingest_browser_history(
         "status": "categorized_and_ingested",
         "detected": analysis
     }
+
+
+@router.post("/vscode")
+async def ingest_vscode_activity(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Specific endpoint for VS Code active coding sessions."""
+    language = payload.get("language", "Unknown")
+    duration = payload.get("duration", 0)  # in seconds
+    file_name = payload.get("file_name", "Unknown File")
+    
+    # Very minor sessions (under 1 minute) might be noisy
+    if duration < 60:
+        return {"status": "ignored", "reason": "session too short"}
+
+    # Map language to Domain
+    domain = _map_language_to_domain(language)
+    
+    # Prepare DevBrain event
+    # A 2-hour session (7200s) has much higher engagement than a 5-minute session
+    engagement = min(1.0, duration / 3600) 
+    
+    event_data = EventCreate(
+        topic=f"Active Coding: {language}",
+        concept=f"Worked on {file_name}",
+        technology=language,
+        domain=domain,
+        source=EventSource.VSCODE,
+        source_title=f"VS Code Session - {language}",
+        depth=EventDepth.ADVANCED, # Coding is active learning
+        confidence_score=1.0, # High confidence since it's hard instrumented time
+        activity_type=ActivityType.CODING,
+        engagement_score=engagement,
+        raw_data=payload
+    )
+
+    local_event = await create_event(db, current_user.id, event_data)
+    await rebuild_skill_graph(db, current_user.id)
+
+    # Dispatch to Snowflake
+    await snowflake_service.send_to_snowflake({
+        "user_id": current_user.id,
+        "source": "vscode",
+        "language": language,
+        "duration": duration,
+        "timestamp": local_event.created_at.isoformat()
+    })
+    
+    return {"status": "vscode_activity_ingested", "duration_recorded": duration}
+
+
+def _map_language_to_domain(lang: str) -> str:
+    lang = lang.lower()
+    mapping = {
+        "python": "Backend",
+        "javascript": "Frontend",
+        "typescript": "Frontend",
+        "go": "Backend",
+        "rust": "Backend",
+        "html": "Frontend",
+        "css": "Frontend",
+        "shell": "DevOps",
+        "java": "Backend",
+        "c++": "Engineering",
+        "c": "Engineering",
+        "swift": "Mobile",
+        "kotlin": "Mobile"
+    }
+    return mapping.get(lang.lower(), "Engineering")
 
 
 @router.post("/github-webhook")

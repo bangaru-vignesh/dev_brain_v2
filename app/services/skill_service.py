@@ -11,8 +11,17 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.models.event import KnowledgeEvent, EventDepth, ActivityType
+from app.models.event import KnowledgeEvent, EventDepth, ActivityType, EventSource
 from app.models.skill import UserSkill
+
+SOURCE_WEIGHTS = {
+    EventSource.NOTES: 1.0,
+    EventSource.VSCODE: 0.8,
+    EventSource.GITHUB: 0.8,
+    EventSource.YOUTUBE: 0.6,
+    EventSource.BROWSER: 0.5,
+    EventSource.MANUAL: 0.4,
+}
 
 DEPTH_WEIGHTS = {
     EventDepth.BEGINNER: 0.8,
@@ -97,7 +106,7 @@ async def rebuild_skill_graph(db: AsyncSession, user_id: int) -> list[UserSkill]
             seen_events.add(dedup_key)
         
         if key not in concept_data:
-            concept_data[key] = {"score": 0.0, "events": 0, "last_activity": ev.created_at}
+            concept_data[key] = {"score": 0.0, "events": 0, "last_activity": ev.created_at, "sources": set()}
             
         # Unbounded Difficulty Fix (cap to 1.3)
         raw_difficulty = 1.0
@@ -111,9 +120,10 @@ async def rebuild_skill_graph(db: AsyncSession, user_id: int) -> list[UserSkill]
         activity_w = ACTIVITY_WEIGHTS.get(getattr(ev, 'activity_type', ActivityType.BROWSING), 0.5)
         engagement_w = 0.5 + getattr(ev, 'engagement_score', 0.5)
         recency = _recency_decay(ev.created_at)
+        source_w = SOURCE_WEIGHTS.get(getattr(ev, 'source', EventSource.BROWSER), 0.5)
         
         # Base event score shifted to balance out fractions
-        event_score = 15.0 * confidence * depth_w * activity_w * engagement_w * recency * difficulty_weight
+        event_score = 15.0 * confidence * depth_w * activity_w * engagement_w * recency * difficulty_weight * source_w
         
         # Apply diminishing returns logic at the concept level:
         old_score = concept_data[key]["score"]
@@ -122,9 +132,20 @@ async def rebuild_skill_graph(db: AsyncSession, user_id: int) -> list[UserSkill]
         concept_data[key]["score"] = min(100.0, new_score)
         concept_data[key]["events"] += 1
         concept_data[key]["last_activity"] = max(concept_data[key]["last_activity"], ev.created_at)
+        concept_data[key]["sources"].add(getattr(ev, 'source', EventSource.BROWSER))
 
-    # Long-Term Skill Decay Execution
+    # Long-Term Skill Decay Execution & Cross-Signal Bonus
     for key, attrs in concept_data.items():
+        # Cross Signal Bonus (Fuse multiple sources for high intelligence)
+        source_count = len(attrs["sources"])
+        bonus = 1.0
+        if source_count == 2:
+            bonus = 1.25
+        elif source_count >= 3:
+            bonus = 1.5
+            
+        attrs["score"] = min(100.0, attrs["score"] * bonus)
+
         days_inactive = (now - attrs["last_activity"]).days if attrs["last_activity"].tzinfo else (now.replace(tzinfo=None) - attrs["last_activity"]).days
         if days_inactive > 30:
             attrs["score"] *= (0.95 ** ((days_inactive - 30) / 30.0))

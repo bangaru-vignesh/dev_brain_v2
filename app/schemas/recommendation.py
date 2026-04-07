@@ -22,6 +22,7 @@ class RecommendationsResponse(BaseModel):
     weekly_focus: list[Recommendation]
     explore_next: list[Recommendation]
     quick_wins: list[Recommendation]
+    behavioral_insights: list[str] = []
     generated_at: datetime
 
 

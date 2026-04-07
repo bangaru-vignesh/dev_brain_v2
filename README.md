@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <div align="center">
 
 ```
@@ -432,7 +431,7 @@ See [PRD.md](PRD.md) for the full Product Requirements Document.
 <div align="center">
 Built with ⬡ for developers who take their growth seriously.
 </div>
-=======
+
 <div align="center">
 
 ```
@@ -866,4 +865,3 @@ See [PRD.md](PRD.md) for the full Product Requirements Document.
 <div align="center">
 Built with ⬡ for developers who take their growth seriously.
 </div>
->>>>>>> 458ad38ffd2a6439d2cbcc35bc35304e37ee233a

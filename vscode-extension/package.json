@@ -1,0 +1,52 @@
+{
+  "name": "devbrain-vscode",
+  "displayName": "DevBrain Tracker",
+  "description": "Automatically track active coding sessions for DevBrain",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "devbrain.connect",
+        "title": "DevBrain: Connect API Key"
+      }
+    ],
+    "configuration": {
+      "title": "DevBrain",
+      "properties": {
+        "devbrain.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your DevBrain API Key (or JWT Token)"
+        },
+        "devbrain.apiUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8001/api/events/vscode",
+          "description": "The API endpoint for DevBrain events"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.18.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}

@@ -57,6 +57,18 @@ async def get_events_this_week(db: AsyncSession, user_id: int) -> int:
     return result.scalar_one()
 
 
+async def get_today_events(db: AsyncSession, user_id: int) -> list[KnowledgeEvent]:
+    """Returns all knowledge events ingested today (from midnight UTC)."""
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    result = await db.execute(
+        select(KnowledgeEvent)
+        .where(KnowledgeEvent.user_id == user_id)
+        .where(KnowledgeEvent.created_at >= today)
+        .order_by(KnowledgeEvent.created_at)
+    )
+    return list(result.scalars().all())
+
+
 async def get_activity_last_30_days(db: AsyncSession, user_id: int) -> list[dict]:
     """Returns daily event counts over the last 30 days."""
     thirty_ago = datetime.now(timezone.utc) - timedelta(days=30)

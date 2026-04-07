@@ -15,6 +15,7 @@ class EventSource(str, enum.Enum):
     YOUTUBE = "youtube"
     NOTES = "notes"
     MANUAL = "manual"
+    VSCODE = "vscode"
 
 
 class EventDepth(str, enum.Enum):

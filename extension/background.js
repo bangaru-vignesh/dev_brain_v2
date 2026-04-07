@@ -5,6 +5,9 @@
 
 const API_BASE = "http://127.0.0.1:8001/api";
 
+let lastTrackedUrl = "";
+let lastTrackTime = 0;
+
 function handleNavigation(details) {
     if (details.frameId === 0) {
         // Add a slight delay to allow SPAs (like YouTube) to update their document.title
@@ -20,6 +23,15 @@ function handleNavigation(details) {
                     tab.title === "YouTube") { // Also ignore generic YouTube homepage
                     return;
                 }
+
+                // Deduplicate rapid fires from browser url omnibox search
+                const now = Date.now();
+                if (tab.url === lastTrackedUrl && (now - lastTrackTime) < 5000) {
+                    return; // Ignore exact same URL fired within 5 seconds
+                }
+                
+                lastTrackedUrl = tab.url;
+                lastTrackTime = now;
 
                 syncToDevBrain(tab.url, tab.title);
             });
