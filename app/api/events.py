@@ -155,6 +155,49 @@ async def ingest_vscode_activity(
     return {"status": "vscode_activity_ingested", "duration_recorded": duration}
 
 
+@router.post("/desktop")
+async def ingest_desktop_activity(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Specific endpoint for Desktop Agent activity."""
+    app_name = payload.get("app", "Unknown")
+    category = payload.get("category", "other")
+    duration = payload.get("duration_seconds", 0)
+    event_type = payload.get("event_type", "app_usage")
+
+    if duration < 30:
+        return {"status": "ignored", "reason": "session too short"}
+
+    # Map category to ActivityType
+    activity_map = {
+        "coding": ActivityType.CODING,
+        "learning": ActivityType.READING_DOCS,
+        "distraction": ActivityType.BROWSING,
+    }
+    activity = activity_map.get(category, ActivityType.BROWSING)
+
+    event_data = EventCreate(
+        topic=f"Desktop: {app_name}",
+        concept=f"Used {app_name} ({event_type})",
+        technology=app_name,
+        domain="Engineering" if category == "coding" else "General",
+        source=EventSource.DESKTOP,
+        source_title=f"Desktop Activity - {app_name}",
+        depth=EventDepth.INTERMEDIATE,
+        confidence_score=1.0,
+        activity_type=activity,
+        engagement_score=min(1.0, duration / 1800), # 30 min = full engagement
+        raw_data=payload
+    )
+
+    local_event = await create_event(db, current_user.id, event_data)
+    await rebuild_skill_graph(db, current_user.id)
+
+    return {"status": "desktop_activity_ingested", "app": app_name}
+
+
 def _map_language_to_domain(lang: str) -> str:
     lang = lang.lower()
     mapping = {

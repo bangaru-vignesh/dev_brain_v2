@@ -16,6 +16,7 @@ class EventSource(str, enum.Enum):
     NOTES = "notes"
     MANUAL = "manual"
     VSCODE = "vscode"
+    DESKTOP = "desktop"
 
 
 class EventDepth(str, enum.Enum):

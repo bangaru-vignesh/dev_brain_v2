@@ -385,7 +385,7 @@ function renderRecentEvents(events) {
     return;
   }
 
-  const sourceIcons = { browser: '🌐', github: '⬡', youtube: '▶', notes: '📝', manual: '✎' };
+  const sourceIcons = { browser: '🌐', github: '⬡', youtube: '▶', notes: '📝', manual: '✎', desktop: '💻', vscode: '⌨' };
 
   container.innerHTML = events.slice(0, 5).map(e => `
     <div class="event-row">
@@ -470,7 +470,7 @@ function renderEventsTable(events) {
     return;
   }
 
-  const sourceIcons = { browser: '🌐', github: '⬡', youtube: '▶', notes: '📝', manual: '✎' };
+  const sourceIcons = { browser: '🌐', github: '⬡', youtube: '▶', notes: '📝', manual: '✎', desktop: '💻', vscode: '⌨' };
 
   container.innerHTML = `
     <table class="events-table">
